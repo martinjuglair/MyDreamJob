@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model CV {
+  id             String   @id @default(cuid())
+  fileName       String
+  fileUrl        String
+  extractedText  String   @db.Text
+  structuredData Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Job {
+  id              String    @id @default(cuid())
+  url             String?
+  company         String
+  role            String
+  location        String?
+  salary          String?
+  rawContent      String    @db.Text
+  scrapedAt       DateTime?
+
+  analysis      Json?
+  matchResult   Json?
+  adaptedCvText String?   @db.Text
+  perfectCvData Json?
+  interviewPrep Json?
+
+  status          JobStatus @default(INTERESTED)
+  statusUpdatedAt DateTime  @default(now())
+  appliedAt       DateTime?
+  notes           String?   @db.Text
+
+  spinResult SpinResult?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum JobStatus {
+  INTERESTED
+  APPLIED
+  PHONE_SCREEN
+  INTERVIEW
+  OFFER
+  REJECTED
+}
+
+/// A reward unlocked when reaching a specific level.
+/// Replaces the old wheel-of-fortune random system.
+model RewardPrize {
+  id          String       @id @default(cuid())
+  label       String
+  emoji       String?
+  color       String
+  /// Level at which this prize is unlocked (e.g. 3 = unlocked at level 3)
+  level       Int          @default(2)
+  active      Boolean      @default(true)
+  /// When the user's level reached >= this prize.level (auto-set by dashboard)
+  unlockedAt  DateTime?
+  /// True once the user marks the prize as physically claimed
+  claimed     Boolean      @default(false)
+  claimedAt   DateTime?
+  spinResults SpinResult[] // legacy, kept for back-compat
+  createdAt   DateTime     @default(now())
+
+  @@index([level])
+}
+
+model SpinResult {
+  id       String      @id @default(cuid())
+  jobId    String      @unique
+  job      Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  prizeId  String
+  prize    RewardPrize @relation(fields: [prizeId], references: [id])
+  redeemed Boolean     @default(false)
+  spunAt   DateTime    @default(now())
+}
+
+/// XP event ledger. Source of truth for level/XP calculations.
+/// The unique (kind, refKey) constraint prevents farming:
+/// e.g. "STATUS:abc123:INTERVIEW" can only be awarded ONCE,
+/// even if the user moves the job back and forth.
+model XpEvent {
+  id          String   @id @default(cuid())
+  kind        String   // STATUS | BADGE | SPIN
+  refKey      String   // e.g. "abc123:APPLIED" or "first_apply" or "spin:xyz"
+  amount      Int
+  description String?  // human-readable, e.g. "Postulé chez Acme"
+  createdAt   DateTime @default(now())
+
+  @@unique([kind, refKey])
+  @@index([createdAt])
+}
