@@ -360,7 +360,7 @@ export default function DashboardPage() {
               {unlockedCount} / {data.achievements.length}
             </Badge>
           </div>
-          <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 lg:grid-cols-6">
+          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3 md:grid-cols-6">
             {data.achievements.map((ach) => (
               <Tooltip key={ach.id}>
                 <TooltipTrigger

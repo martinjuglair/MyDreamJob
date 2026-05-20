@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getModel } from "@/lib/ai/provider";
 import { generateText } from "ai";
-import { readFile } from "fs/promises";
-import path from "path";
+import { readFile as readStorageFile } from "@/lib/storage";
 import {
   analyzeJobSystemPrompt,
   analyzeJobUserPrompt,
@@ -28,11 +27,27 @@ export async function POST(
 
     let analysisText: string;
 
+    // Try to attach the CV PDF for richer analysis. If unreachable
+    // (e.g. CV uploaded long ago + filesystem reset), fall back gracefully
+    // to text-only analysis using extractedText we have in DB.
+    let pdfBuffer: Buffer | null = null;
     if (cv?.fileUrl) {
-      const filePath = path.join(process.cwd(), cv.fileUrl);
-      const pdfBuffer = await readFile(filePath);
-      const pdfBase64 = pdfBuffer.toString("base64");
+      try {
+        // Normalize legacy keys like "/uploads/cv-XXX.pdf" → "uploads/cv-XXX.pdf"
+        const key = cv.fileUrl.startsWith("/")
+          ? cv.fileUrl.slice(1)
+          : cv.fileUrl;
+        pdfBuffer = await readStorageFile(key);
+      } catch (e) {
+        console.warn(
+          `CV file unavailable (${cv.fileUrl}). Falling back to text-only analysis.`,
+          e instanceof Error ? e.message : e
+        );
+      }
+    }
 
+    if (pdfBuffer) {
+      const pdfBase64 = pdfBuffer.toString("base64");
       const { text } = await generateText({
         model,
         system: analyzeWithCvSystemPrompt,
@@ -40,15 +55,8 @@ export async function POST(
           {
             role: "user",
             content: [
-              {
-                type: "file",
-                data: pdfBase64,
-                mediaType: "application/pdf",
-              },
-              {
-                type: "text",
-                text: analyzeWithCvUserPrompt(job.rawContent),
-              },
+              { type: "file", data: pdfBase64, mediaType: "application/pdf" },
+              { type: "text", text: analyzeWithCvUserPrompt(job.rawContent) },
             ],
           },
         ],

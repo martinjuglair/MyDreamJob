@@ -24,7 +24,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-64 flex-col bg-gradient-to-b from-[#3d7a7a] via-[#356c6c] to-[#2d5d5d] text-white shadow-2xl">
+    <aside className="flex h-full w-72 flex-col bg-gradient-to-b from-[#3d7a7a] via-[#356c6c] to-[#2d5d5d] text-white shadow-2xl lg:w-64">
       {/* Logo */}
       <div className="flex h-20 items-center gap-3 border-b border-white/15 px-6">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-300 to-pink-400 text-white shadow-lg">
@@ -47,7 +47,7 @@ export function Sidebar() {
               key={item.name}
               href={item.href}
               className={cn(
-                "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                "group relative flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all active:bg-white/20",
                 isActive
                   ? "bg-white/15 text-white shadow-inner"
                   : "text-white/75 hover:bg-white/10 hover:text-white"
@@ -55,7 +55,7 @@ export function Sidebar() {
             >
               <div
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-lg transition-all",
+                  "flex h-9 w-9 items-center justify-center rounded-lg transition-all",
                   isActive
                     ? `bg-gradient-to-br ${item.badgeGradient} text-white shadow-md`
                     : "bg-white/5 text-white/70 group-hover:bg-white/10"

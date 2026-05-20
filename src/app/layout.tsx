@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Sidebar } from "@/components/layout/sidebar";
+import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -15,6 +15,13 @@ export const metadata: Metadata = {
   description: "Trouve le job de tes rêves",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#3d7a7a",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,12 +32,9 @@ export default function RootLayout({
       lang="fr"
       className={`${manrope.variable} h-full antialiased`}
     >
-      <body className="flex h-full">
+      <body className="h-full">
         <TooltipProvider>
-          <Sidebar />
-          <main className="flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-6xl p-8">{children}</div>
-          </main>
+          <AppShell>{children}</AppShell>
           <Toaster />
         </TooltipProvider>
       </body>

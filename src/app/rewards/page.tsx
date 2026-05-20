@@ -260,112 +260,169 @@ export default function RewardsPage() {
           </h2>
           <div className="relative space-y-3">
             {sortedPrizes.map((prize, idx) => {
-              const isUnlocked = !!prize.unlockedAt;
-              const isClaimed = prize.claimed;
-              const isLocked = !isUnlocked;
-              const isNext = isLocked && prize === nextPrize;
-              return (
-                <div key={prize.id} className="relative">
-                  {/* Connector line */}
-                  {idx < sortedPrizes.length - 1 && (
-                    <div className="absolute left-7 top-full h-3 w-0.5 bg-gradient-to-b from-amber-300 to-transparent" />
-                  )}
-                  <Card
-                    className={`overflow-hidden border-2 transition-all ${
-                      isClaimed
-                        ? "border-emerald-200 bg-gradient-to-br from-emerald-50/60 to-teal-50/60"
-                        : isUnlocked
-                          ? "border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-md ring-2 ring-amber-200/50"
-                          : isNext
-                            ? "border-dashed border-amber-300 bg-gradient-to-br from-white to-amber-50/40"
-                            : "border-dashed border-slate-200 bg-slate-50/50 opacity-70"
-                    }`}
-                  >
-                    <CardContent className="flex items-center gap-4 p-5">
-                      {/* Level badge */}
-                      <div
-                        className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-sm ${
-                          isClaimed
-                            ? "bg-gradient-to-br from-emerald-400 to-teal-500 text-white"
-                            : isUnlocked
-                              ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white"
-                              : "bg-slate-200 text-slate-500"
-                        }`}
-                      >
-                        <div className="text-center leading-none">
-                          <p className="text-[9px] font-medium opacity-80">NIV.</p>
-                          <p className="text-xl font-bold">{prize.level}</p>
-                        </div>
-                      </div>
-
-                      {/* Prize info */}
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <div
-                          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl ${
-                            isLocked ? "grayscale" : ""
-                          }`}
-                          style={{
-                            backgroundColor: isLocked ? "#e2e8f0" : prize.color + "30",
-                          }}
-                        >
-                          {isLocked ? <Lock className="h-5 w-5 text-slate-400" /> : prize.emoji || "🎁"}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className={`truncate font-semibold ${isLocked ? "text-slate-500" : ""}`}
-                          >
-                            {prize.label}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {isClaimed
-                              ? `Réclamé le ${prize.claimedAt ? new Date(prize.claimedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : ""}`
-                              : isUnlocked
-                                ? `Débloqué le ${new Date(prize.unlockedAt!).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} 🎉`
-                                : isNext
-                                  ? `Plus que ${prize.level - currentLevel} niveau${prize.level - currentLevel > 1 ? "x" : ""} !`
-                                  : `À débloquer au niveau ${prize.level}`}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Action */}
-                      <div className="flex shrink-0 items-center gap-2">
-                        {isUnlocked && !isClaimed && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleClaim(prize.id)}
-                            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-                          >
-                            <Gift className="mr-1.5 h-3.5 w-3.5" />
-                            Réclamer
-                          </Button>
-                        )}
-                        {isClaimed && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Réclamé
-                          </span>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(prize.id)}
-                          className="text-rose-400 hover:bg-rose-50"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              );
+              const isLastConfigured = idx === sortedPrizes.length - 1;
+              const showGhostsAfter = isLastConfigured;
+              // Render the real prize, then if it's the last one, render 3 ghosts
+              return [
+                renderPrizeCard(prize, idx),
+                showGhostsAfter ? renderGhostPrizes(prize.level) : null,
+              ];
             })}
           </div>
         </div>
       )}
     </div>
   );
+
+  // ── Helpers (closures over component state) ────────────────────────
+  function renderPrizeCard(prize: Prize, idx: number) {
+    const isUnlocked = !!prize.unlockedAt;
+    const isClaimed = prize.claimed;
+    const isLocked = !isUnlocked;
+    const isNext = isLocked && prize === nextPrize;
+    return (
+      <div key={prize.id} className="relative">
+        {/* Connector line */}
+        {idx < sortedPrizes.length - 1 && (
+          <div className="absolute left-7 top-full h-3 w-0.5 bg-gradient-to-b from-amber-300 to-transparent" />
+        )}
+        <Card
+          className={`overflow-hidden border-2 transition-all ${
+            isClaimed
+              ? "border-emerald-200 bg-gradient-to-br from-emerald-50/60 to-teal-50/60"
+              : isUnlocked
+                ? "border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-md ring-2 ring-amber-200/50"
+                : isNext
+                  ? "border-dashed border-amber-300 bg-gradient-to-br from-white to-amber-50/40"
+                  : "border-dashed border-slate-200 bg-slate-50/50 opacity-70"
+          }`}
+        >
+          <CardContent className="flex items-center gap-3 p-4 sm:gap-4 sm:p-5">
+            {/* Level badge */}
+            <div
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm sm:h-14 sm:w-14 ${
+                isClaimed
+                  ? "bg-gradient-to-br from-emerald-400 to-teal-500 text-white"
+                  : isUnlocked
+                    ? "bg-gradient-to-br from-amber-400 to-orange-500 text-white"
+                    : "bg-slate-200 text-slate-500"
+              }`}
+            >
+              <div className="text-center leading-none">
+                <p className="text-[9px] font-medium opacity-80">NIV.</p>
+                <p className="text-lg font-bold sm:text-xl">{prize.level}</p>
+              </div>
+            </div>
+
+            {/* Prize info */}
+            <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+              <div
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl sm:h-12 sm:w-12 sm:text-2xl ${
+                  isLocked ? "grayscale" : ""
+                }`}
+                style={{
+                  backgroundColor: isLocked ? "#e2e8f0" : prize.color + "30",
+                }}
+              >
+                {isLocked ? <Lock className="h-4 w-4 text-slate-400 sm:h-5 sm:w-5" /> : prize.emoji || "🎁"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`truncate text-sm font-semibold sm:text-base ${isLocked ? "text-slate-500" : ""}`}
+                >
+                  {prize.label}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {isClaimed
+                    ? `Réclamé le ${prize.claimedAt ? new Date(prize.claimedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : ""}`
+                    : isUnlocked
+                      ? `Débloqué le ${new Date(prize.unlockedAt!).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} 🎉`
+                      : isNext
+                        ? `Plus que ${prize.level - currentLevel} niveau${prize.level - currentLevel > 1 ? "x" : ""} !`
+                        : `À débloquer au niveau ${prize.level}`}
+                </p>
+              </div>
+            </div>
+
+            {/* Action */}
+            <div className="flex shrink-0 items-center gap-1.5">
+              {isUnlocked && !isClaimed && (
+                <Button
+                  size="sm"
+                  onClick={() => handleClaim(prize.id)}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                >
+                  <Gift className="mr-1.5 h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Réclamer</span>
+                </Button>
+              )}
+              {isClaimed && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                  <CheckCircle2 className="h-3 w-3" />
+                  <span className="hidden sm:inline">Réclamé</span>
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(prize.id)}
+                className="text-rose-400 hover:bg-rose-50"
+                title="Supprimer"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  function renderGhostPrizes(lastLevel: number) {
+    // Show 3 ghost prizes for the next 3 levels (to tease progression)
+    return (
+      <div key="ghosts" className="space-y-3 pt-3">
+        <div className="flex items-center gap-2 px-1">
+          <div className="h-px flex-1 bg-slate-200" />
+          <p className="text-xs font-medium text-muted-foreground">
+            Niveaux supérieurs — cadeaux à configurer
+          </p>
+          <div className="h-px flex-1 bg-slate-200" />
+        </div>
+        {[1, 2, 3].map((offset) => {
+          const ghostLevel = lastLevel + offset;
+          return (
+            <Card
+              key={`ghost-${ghostLevel}`}
+              className="overflow-hidden border-2 border-dashed border-slate-200 bg-gradient-to-br from-slate-50/40 to-white opacity-60"
+            >
+              <CardContent className="flex items-center gap-3 p-4 sm:gap-4 sm:p-5">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 sm:h-14 sm:w-14">
+                  <div className="text-center leading-none">
+                    <p className="text-[9px] font-medium opacity-70">NIV.</p>
+                    <p className="text-lg font-bold sm:text-xl">{ghostLevel}</p>
+                  </div>
+                </div>
+                <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 backdrop-blur-sm sm:h-12 sm:w-12">
+                    <Lock className="h-4 w-4 text-slate-300 sm:h-5 sm:w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="select-none truncate text-sm font-semibold text-slate-400 blur-[3px] sm:text-base">
+                      Cadeau mystère
+                    </p>
+                    <p className="text-xs italic text-muted-foreground">
+                      🎁 À configurer pour le niveau {ghostLevel}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  }
 }
 
 function StatBlock({
