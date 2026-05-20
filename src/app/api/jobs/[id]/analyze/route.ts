@@ -61,7 +61,9 @@ export async function POST(
           ],
         },
       ],
-      temperature: 0.3,
+      // Lower temperature = more deterministic = less hallucination + same
+      // score for the same CV/job pair if re-run
+      temperature: 0.1,
     });
     const analysisText = text;
 
@@ -77,11 +79,12 @@ export async function POST(
     if (analysis.score != null) {
       updateData.matchResult = {
         score: analysis.score,
+        scoreBreakdown: analysis.scoreBreakdown || null,
         strengths: analysis.strengths || [],
         weaknesses: analysis.weaknesses || [],
         recommendations: analysis.recommendations || [],
         overallAssessment: analysis.overallAssessment || "",
-        cvFormFeedback: analysis.cvFormFeedback || "",
+        cvFormFeedback: analysis.cvFormFeedback || null,
       };
     }
 

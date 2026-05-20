@@ -738,14 +738,20 @@ export default function JobDetailPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {match.strengths.map((s, i) => (
-                        <div key={i}>
-                          <p className="font-medium text-sm">{s.point}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {s.detail}
-                          </p>
-                        </div>
-                      ))}
+                      {match.strengths.map((s, i) => {
+                        const evidence = (s as { evidence?: string }).evidence;
+                        return (
+                          <div key={i} className="space-y-1">
+                            <p className="text-sm font-semibold">{s.point}</p>
+                            <p className="text-sm text-muted-foreground">{s.detail}</p>
+                            {evidence && (
+                              <p className="rounded-md border-l-2 border-emerald-300 bg-emerald-50 px-2 py-1 text-xs italic text-emerald-900">
+                                💬 « {evidence} »
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </CardContent>
                   </Card>
                 )}
@@ -759,37 +765,132 @@ export default function JobDetailPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {match.weaknesses.map((w, i) => (
-                        <div key={i}>
-                          <p className="font-medium text-sm">{w.point}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {w.detail}
-                          </p>
-                        </div>
-                      ))}
+                      {match.weaknesses.map((w, i) => {
+                        const evidence = (w as { evidence?: string }).evidence;
+                        return (
+                          <div key={i} className="space-y-1">
+                            <p className="text-sm font-semibold">{w.point}</p>
+                            <p className="text-sm text-muted-foreground">{w.detail}</p>
+                            {evidence && (
+                              <p className="rounded-md border-l-2 border-rose-300 bg-rose-50 px-2 py-1 text-xs italic text-rose-900">
+                                💬 « {evidence} »
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </CardContent>
                   </Card>
                 )}
               </div>
 
-              {(match as Record<string, unknown>).cvFormFeedback && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-blue-500" />
-                      Analyse du design du CV
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm">
-                      {
-                        (match as Record<string, unknown>)
-                          .cvFormFeedback as string
-                      }
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+              {(() => {
+                const fb = (match as Record<string, unknown>).cvFormFeedback;
+                if (!fb) return null;
+                // Support both legacy (string) and new (structured object) shapes
+                if (typeof fb === "string") {
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-blue-500" />
+                          Analyse du design du CV
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm">{fb}</p>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+                const f = fb as {
+                  lisibilite?: string;
+                  hierarchie?: string;
+                  adequation?: string;
+                  ameliorations?: string[];
+                };
+                return (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-blue-500" />
+                        Analyse du design du CV
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {f.lisibilite && (
+                        <div className="rounded-xl bg-slate-50 p-3">
+                          <p className="text-xs font-bold uppercase tracking-wide text-slate-600">👀 Lisibilité</p>
+                          <p className="mt-1 text-sm leading-relaxed">{f.lisibilite}</p>
+                        </div>
+                      )}
+                      {f.hierarchie && (
+                        <div className="rounded-xl bg-slate-50 p-3">
+                          <p className="text-xs font-bold uppercase tracking-wide text-slate-600">🗂️ Hiérarchie</p>
+                          <p className="mt-1 text-sm leading-relaxed">{f.hierarchie}</p>
+                        </div>
+                      )}
+                      {f.adequation && (
+                        <div className="rounded-xl bg-slate-50 p-3">
+                          <p className="text-xs font-bold uppercase tracking-wide text-slate-600">🎯 Adéquation au secteur</p>
+                          <p className="mt-1 text-sm leading-relaxed">{f.adequation}</p>
+                        </div>
+                      )}
+                      {f.ameliorations && f.ameliorations.length > 0 && (
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wide text-amber-700">💡 Suggestions d&apos;amélioration de la forme</p>
+                          <ul className="mt-2 space-y-1">
+                            {f.ameliorations.map((a, i) => (
+                              <li key={i} className="flex items-start gap-2 text-sm">
+                                <span className="mt-1 text-amber-500">→</span>
+                                <span>{a}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {/* Score breakdown — transparency on how the score is computed */}
+              {(() => {
+                const sb = (match as Record<string, unknown>).scoreBreakdown as
+                  | { requirementsMet?: string; experienceFit?: string; redFlags?: string }
+                  | undefined;
+                if (!sb) return null;
+                return (
+                  <Card className="border-2 border-slate-200">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Target className="h-5 w-5 text-primary" />
+                        Détail du diagnostic
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      {sb.requirementsMet && (
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">✓ Exigences couvertes</p>
+                          <p className="mt-1 leading-relaxed">{sb.requirementsMet}</p>
+                        </div>
+                      )}
+                      {sb.experienceFit && (
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wide text-blue-700">📊 Adéquation expérience</p>
+                          <p className="mt-1 leading-relaxed">{sb.experienceFit}</p>
+                        </div>
+                      )}
+                      {sb.redFlags && (
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wide text-rose-700">⚠️ Points de vigilance</p>
+                          <p className="mt-1 leading-relaxed">{sb.redFlags}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {match.recommendations && match.recommendations.length > 0 && (
                 <Card>
