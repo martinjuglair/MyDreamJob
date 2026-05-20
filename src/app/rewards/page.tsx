@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,17 @@ interface MetaInfo {
 }
 
 export default function RewardsPage() {
+  return (
+    <Suspense>
+      <RewardsContent />
+    </Suspense>
+  );
+}
+
+function RewardsContent() {
+  const searchParams = useSearchParams();
+  const isAdmin = searchParams.get("admin") === "1";
+
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [meta, setMeta] = useState<MetaInfo | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -110,12 +122,14 @@ export default function RewardsPage() {
         title="Tes récompenses"
         subtitle={
           meta
-            ? `Niveau ${currentLevel} · ${unlockedCount}/${prizes.length} cadeau${prizes.length > 1 ? "x" : ""} débloqué${unlockedCount > 1 ? "s" : ""}`
+            ? `Niveau ${currentLevel} · ${unlockedCount} cadeau${unlockedCount > 1 ? "x" : ""} débloqué${unlockedCount > 1 ? "s" : ""}`
             : "Chargement…"
         }
         emoji="🎁"
         gradient="from-amber-500 via-orange-500 to-pink-500"
       >
+        {/* Admin-only: add prize. Hidden unless ?admin=1 in URL */}
+        {isAdmin && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2.5 text-sm font-semibold backdrop-blur transition-all hover:bg-white/30">
             <Plus className="h-4 w-4" />
@@ -189,16 +203,11 @@ export default function RewardsPage() {
             </div>
           </DialogContent>
         </Dialog>
+        )}
       </PageHero>
 
       {/* ═══ Status row ═══ */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatBlock
-          icon="🎁"
-          label="Cadeaux configurés"
-          value={prizes.filter((p) => p.active).length}
-          gradient="from-amber-400 to-orange-500"
-        />
+      <div className="grid gap-3 sm:grid-cols-2">
         <StatBlock
           icon="🔓"
           label="Débloqués"
@@ -362,15 +371,17 @@ export default function RewardsPage() {
                   <span className="hidden sm:inline">Réclamé</span>
                 </span>
               )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDelete(prize.id)}
-                className="text-rose-400 hover:bg-rose-50"
-                title="Supprimer"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(prize.id)}
+                  className="text-rose-400 hover:bg-rose-50"
+                  title="Supprimer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -379,40 +390,40 @@ export default function RewardsPage() {
   }
 
   function renderGhostPrizes(lastLevel: number) {
-    // Show 3 ghost prizes for the next 3 levels (to tease progression)
+    // Tease the next 4 hidden surprises — they look exciting but mysterious.
+    const teasers = [
+      { emoji: "🎁", label: "Surprise à venir" },
+      { emoji: "✨", label: "Cadeau secret" },
+      { emoji: "💝", label: "Récompense mystère" },
+      { emoji: "🌟", label: "Encore mieux..." },
+    ];
     return (
       <div key="ghosts" className="space-y-3 pt-3">
-        <div className="flex items-center gap-2 px-1">
-          <div className="h-px flex-1 bg-slate-200" />
-          <p className="text-xs font-medium text-muted-foreground">
-            Niveaux supérieurs — cadeaux à configurer
-          </p>
-          <div className="h-px flex-1 bg-slate-200" />
-        </div>
-        {[1, 2, 3].map((offset) => {
-          const ghostLevel = lastLevel + offset;
+        {teasers.map((t, i) => {
+          const ghostLevel = lastLevel + i + 1;
           return (
             <Card
               key={`ghost-${ghostLevel}`}
-              className="overflow-hidden border-2 border-dashed border-slate-200 bg-gradient-to-br from-slate-50/40 to-white opacity-60"
+              className="overflow-hidden border-2 border-dashed border-amber-200/60 bg-gradient-to-br from-amber-50/40 to-pink-50/30 opacity-80 transition-opacity hover:opacity-95"
             >
               <CardContent className="flex items-center gap-3 p-4 sm:gap-4 sm:p-5">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 sm:h-14 sm:w-14">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-200 to-pink-200 text-amber-700 shadow-sm sm:h-14 sm:w-14">
                   <div className="text-center leading-none">
-                    <p className="text-[9px] font-medium opacity-70">NIV.</p>
+                    <p className="text-[9px] font-medium opacity-80">NIV.</p>
                     <p className="text-lg font-bold sm:text-xl">{ghostLevel}</p>
                   </div>
                 </div>
                 <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 backdrop-blur-sm sm:h-12 sm:w-12">
-                    <Lock className="h-4 w-4 text-slate-300 sm:h-5 sm:w-5" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/60 text-xl shadow-inner sm:h-12 sm:w-12 sm:text-2xl">
+                    <span className="opacity-50">{t.emoji}</span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="select-none truncate text-sm font-semibold text-slate-400 blur-[3px] sm:text-base">
-                      Cadeau mystère
+                    <p className="select-none truncate text-sm font-semibold text-slate-500 blur-[4px] sm:text-base">
+                      {t.label}
                     </p>
-                    <p className="text-xs italic text-muted-foreground">
-                      🎁 À configurer pour le niveau {ghostLevel}
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      <Lock className="mr-1 inline h-3 w-3" />
+                      Révélé au niveau {ghostLevel}
                     </p>
                   </div>
                 </div>
