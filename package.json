@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint"
   },
@@ -22,6 +23,7 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@react-pdf/renderer": "^4.5.1",
+    "@supabase/supabase-js": "^2.106.0",
     "ai": "^6.0.180",
     "canvas-confetti": "^1.9.4",
     "cheerio": "^1.2.0",

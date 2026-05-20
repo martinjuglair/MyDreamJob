@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { extractText, getDocumentProxy } from "unpdf";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { saveFile } from "@/lib/storage";
 import { getModel } from "@/lib/ai/provider";
 import { generateText } from "ai";
 import {
@@ -39,12 +38,8 @@ export async function POST(request: NextRequest) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  const uploadsDir = path.join(process.cwd(), "uploads");
-  await mkdir(uploadsDir, { recursive: true });
-
-  const fileName = `cv-${Date.now()}.pdf`;
-  const filePath = path.join(uploadsDir, fileName);
-  await writeFile(filePath, buffer);
+  // Save via storage abstraction (filesystem in dev, Supabase Storage in prod)
+  const fileKey = await saveFile(file.name, buffer, "application/pdf");
 
   // ── Step 1: Extract raw text ──────────────────────────────────────
   let extractedText = "";
@@ -94,7 +89,7 @@ export async function POST(request: NextRequest) {
   const cv = await prisma.cV.create({
     data: {
       fileName: file.name,
-      fileUrl: `/uploads/${fileName}`,
+      fileUrl: fileKey, // storage key (works with both backends)
       extractedText,
       ...(structuredData
         ? { structuredData: JSON.parse(JSON.stringify(structuredData)) }
